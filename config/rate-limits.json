@@ -1,0 +1,17 @@
+{
+    "identityOrder": ["jwt-sub", "session-cookie", "ip"],
+    "jwtSecret": "your-jwt-secret-key-here",
+    "limits": {
+      "global": {
+        "minute": 10,
+        "hour": 100,
+        "day": 1000,
+        "month": 30000
+      }
+    },
+    "routesInScope": [
+      "/api/proxy/projects",
+      "/api/proxy/user"
+    ],
+    "turnstileEnabled": false
+  }

@@ -108,6 +108,7 @@
 
 - 🚀 **Multiple Deployment Modes**: Iframe embed, direct widget, floating button, or standalone
 - 🔒 **Secure API Proxy**: Server-side API key management
+- 🛡️ **Enterprise Rate Limiting**: Prevent abuse with configurable per-user quotas ([docs](docs/rate-limiting.md))
 - 💬 **Conversation Management**: Multi-conversation support with persistence
 - 🎨 **Customizable UI**: Themes, colors, positioning, and branding options
 - 🔄 **Real-time Streaming**: Live message streaming with typing indicators
