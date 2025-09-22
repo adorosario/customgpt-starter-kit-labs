@@ -10,12 +10,15 @@ WORKDIR /app
 # Install dependencies needed for both dev and prod
 RUN apk add --no-cache libc6-compat curl
 
+# Enable pnpm
+RUN corepack enable pnpm
+
 # Copy package files
 COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # Install dependencies
-RUN npm ci --only=production --omit=dev
+RUN pnpm install --prod --frozen-lockfile
 
 # ============================================
 # Stage 2: Builder - All Assets
@@ -23,19 +26,22 @@ RUN npm ci --only=production --omit=dev
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# Enable pnpm
+RUN corepack enable pnpm
+
 # Copy package files
 COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # Install all dependencies (including dev)
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build all targets
-RUN npm run type-check
-RUN npm run build:all
+RUN pnpm run type-check
+RUN pnpm run build:all
 
 # ============================================
 # Stage 3: Standalone App (Full Next.js App)
@@ -183,12 +189,15 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --no-cache libc6-compat
 
+# Enable pnpm
+RUN corepack enable pnpm
+
 # Copy package files
 COPY package*.json ./
 COPY pnpm-lock.yaml* ./
 
 # Install all dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -197,4 +206,4 @@ COPY . .
 EXPOSE 3000 8080 8081
 
 # Default to Next.js dev server
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]

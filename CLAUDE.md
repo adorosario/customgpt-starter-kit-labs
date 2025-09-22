@@ -11,31 +11,28 @@ This is a clean v1 production-ready codebase. All development artifacts, TODO co
 ### Core Commands
 ```bash
 # Install dependencies
+pnpm install              # Preferred package manager
+# or
 npm install
 
 # Development
-npm run dev                # Start Next.js dev server (http://localhost:3000)
-npm run dev:widget        # Start widget dev server
-npm run dev:iframe        # Start iframe dev server
+pnpm dev                  # Start Next.js dev server (http://localhost:3000)
+pnpm dev:widget           # Start widget dev server
+pnpm dev:iframe           # Start iframe dev server
+pnpm dev:https            # Start dev server with HTTPS
 
 # Build
-npm run build             # Build Next.js standalone app
-npm run build:widget      # Build widget bundle (dist/widget/customgpt-widget.js)
-npm run build:iframe      # Build iframe app (dist/iframe/)
-npm run build:all         # Build everything
+pnpm build                # Build Next.js standalone app
+pnpm build:widget         # Build widget bundle (dist/widget/customgpt-widget.js)
+pnpm build:iframe         # Build iframe app (dist/iframe/)
+pnpm build:all            # Build everything
 
 # Production
-npm start                 # Start production server
+pnpm start                # Start production server
 
 # Code Quality
-npm run lint              # Run ESLint
-npm run type-check        # TypeScript type checking
-```
-
-### Testing
-```bash
-npm test                  # Run tests (Jest)
-npm run test:watch        # Run tests in watch mode
+pnpm lint                 # Run ESLint
+pnpm type-check           # TypeScript type checking
 ```
 
 ## Architecture Overview
@@ -200,44 +197,3 @@ Comprehensive loading indicators have been implemented across all major user int
 - `ConversationSkeleton` - Conversation list placeholder
 - `LoadingOverlay` - Full overlay with backdrop blur for modal operations
 
- 🧠 COMMITTED TO MEMORY:
-
-  Core Principle:
-
-  One CLI command > Multiple tool calls
-
-  Essential Commands:
-
-  1. Pattern Search:
-    - rg -n "pattern" --glob '!node_modules/*' instead of multiple Grep calls
-  2. File Finding:
-    - fd filename or fd .ext directory instead of Glob tool
-  3. File Preview:
-    - bat -n filepath for syntax-highlighted preview with line numbers
-  4. Bulk Refactoring:
-    - rg -l "pattern" | xargs sed -i 's/old/new/g' for mass replacements
-  5. Project Structure:
-    - tree -L 2 directories for quick overview
-  6. JSON Inspection:
-    - jq '.key' file.json for quick JSON parsing
-
-  The Game-Changing Pattern:
-
-  # Find files → Pipe to xargs → Apply sed transformation
-  rg -l "find_this" | xargs sed -i 's/replace_this/with_this/g'
-
-  This single pattern could replace dozens of Edit tool calls!
-
-  Mental Note:
-
-  Before reaching for Read/Edit/Glob tools, I'll now ask myself:
-  - Can rg find this pattern faster?
-  - Can fd locate these files quicker?
-  - Can sed fix all instances at once?
-  - Can jq extract this JSON data directly?
-
-  This knowledge is now part of my workflow. In future sessions, I'll prioritize these CLI power tools for:
-  - Faster code discovery
-  - Bulk refactoring
-  - Efficient file operations
-  - Better performance overall
