@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a new feature or enhancement
+title: "[Feature] "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are we solving?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the solution. Include APIs, configs, and UX.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: Bullet list of pass/fail checks
+    validations:
+      required: true
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing Plan
+      description: Unit/E2E/load tests and how to verify
+  - type: input
+    id: owner
+    attributes:
+      label: DRI
+      description: Who owns this?
