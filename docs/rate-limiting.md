@@ -388,25 +388,6 @@ UPSTASH_REDIS_REST_TOKEN=your-redis-token
 3. **Rate limits not working**: Verify routes are in `routesInScope` in config
 4. **Headers missing**: Check proxy integration is working correctly
 
-### Debug Mode
-
-The identity system logs detailed information in development mode. Check your console for:
-
-```
-[Identity] Configuration loaded successfully
-[Identity] JWT verification failed: [reason]
-[Identity] Session extraction failed: [reason]
-[Identity] IP hashing failed: [reason]
-```
-
-## Next Steps
-
-After confirming Milestone 1 works correctly:
-
-1. Test all identity methods manually
-2. Verify configuration loading and caching
-3. Check error handling and fallbacks
-4. Proceed to Milestone 2: Rate Limiting Middleware
 
 ---
 
