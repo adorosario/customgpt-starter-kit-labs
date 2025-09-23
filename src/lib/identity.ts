@@ -151,6 +151,18 @@ async function extractHashedIp(request: NextRequest): Promise<string> {
              request.ip || 
              '127.0.0.1';
 
+    // Normalize IP to avoid cache/identity mismatches between routes
+    // - Map IPv6 loopback to IPv4
+    // - Strip IPv6 mapped IPv4 prefix ::ffff:
+    // - Lowercase for consistency
+    if (ip === '::1') {
+      ip = '127.0.0.1';
+    }
+    if (ip?.startsWith('::ffff:')) {
+      ip = ip.substring('::ffff:'.length);
+    }
+    ip = (ip || '').toLowerCase();
+
     // Hash the IP for privacy
     const encoder = new TextEncoder();
     const data = encoder.encode(ip);

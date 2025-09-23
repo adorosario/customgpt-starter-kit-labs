@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
 import { getIdentityKey, getIdentityConfig } from './identity';
+import { applyTurnstileVerification, type TurnstileVerificationResult } from './turnstile-verification';
 
 // Rate limit result interface
 export interface RateLimitResult {
@@ -10,6 +11,7 @@ export interface RateLimitResult {
   resetTime: number;
   limit: number;
   window: string;
+  turnstileVerification?: TurnstileVerificationResult;
 }
 
 // Rate limit error class
@@ -246,6 +248,33 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
     
     // Get user identity
     const identityKey = await getIdentityKey(request);
+    
+    // Apply Turnstile verification check
+    const turnstileResult = await applyTurnstileVerification(request, identityKey);
+    
+    // If Turnstile verification is required but not passed, block the request
+    if (turnstileResult.required && !turnstileResult.verified) {
+      console.log('[RateLimit] Blocked request due to failed Turnstile verification:', {
+        identity: identityKey.split(':')[0],
+        path,
+        error: turnstileResult.error
+      });
+      
+      return {
+        allowed: false,
+        headers: {
+          'X-RateLimit-Blocked': 'turnstile-required',
+          'X-Turnstile-Required': 'true',
+          'X-Turnstile-Error': turnstileResult.error || 'Verification required',
+          'X-RateLimit-Identity': identityKey.split(':')[0],
+        },
+        remaining: 0,
+        resetTime: getCurrentTimestamp() + 60,
+        limit: 0,
+        window: 'turnstile',
+        turnstileVerification: turnstileResult
+      };
+    }
     const config = getIdentityConfig();
     const limits = config.limits.global;
     
@@ -302,11 +331,14 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
         'X-RateLimit-Reset': actualResetTime.toString(),
         'X-RateLimit-Window': 'minute',
         'X-RateLimit-Identity': identityKey.split(':')[0],
+        'X-Turnstile-Status': turnstileResult.verified ? 'verified' : 'not-required',
+        'X-Turnstile-Bypass': turnstileResult.bypassReason || 'none',
       },
       remaining: actualRemaining,
       resetTime: actualResetTime,
       limit: limits.minute || 999999,
-      window: 'minute'
+      window: 'minute',
+      turnstileVerification: turnstileResult
     };
     
   } catch (error) {

@@ -35,6 +35,29 @@ export async function proxyRequest(
       rateLimitHeaders = rateLimitResult.headers;
       
       if (!rateLimitResult.allowed) {
+        // Check if this is a Turnstile verification failure
+        if (rateLimitResult.window === 'turnstile') {
+          console.log('[Proxy] Turnstile verification required:', {
+            path: apiPath,
+            identity: rateLimitHeaders['X-RateLimit-Identity'],
+            error: rateLimitHeaders['X-Turnstile-Error']
+          });
+          
+          return NextResponse.json(
+            { 
+              error: 'Human verification required',
+              message: rateLimitHeaders['X-Turnstile-Error'] || 'Please complete the security verification to continue.',
+              code: 'TURNSTILE_VERIFICATION_REQUIRED',
+              turnstileRequired: true
+            },
+            { 
+              status: 403, // Use 403 for verification required
+              headers: rateLimitHeaders
+            }
+          );
+        }
+        
+        // Regular rate limit exceeded
         console.log('[Proxy] Rate limit exceeded:', {
           path: apiPath,
           identity: rateLimitHeaders['X-RateLimit-Identity'],
