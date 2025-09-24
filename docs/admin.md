@@ -48,7 +48,7 @@ ADMIN_PASSWORD_HASH=bcrypt-hash
 ADMIN_SESSION_TIMEOUT=3600  # 1 hour
 ADMIN_ALLOWED_IPS=127.0.0.1,10.0.0.0/8  # Optional IP restriction
 Testing Requirements:
-
+ 
 
 Unit test: Authentication middleware
 
