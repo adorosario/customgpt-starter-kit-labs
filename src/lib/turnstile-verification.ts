@@ -14,6 +14,7 @@
 
 import { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { getIdentityConfig } from '@/lib/identity';
 import type { VerifySuccessResponse, VerifyErrorResponse } from '@/app/api/turnstile/verify/route';
 
 // Verification cache interface
@@ -81,11 +82,19 @@ export interface TurnstileConfig {
  * Get Turnstile configuration from environment
  */
 export function getTurnstileConfig(): TurnstileConfig {
+  // Merge runtime config from identity config (Redis overrides) with env defaults
+  const merged = getIdentityConfig();
+  const uiEnabled = merged.turnstileEnabled === true;
+  const envEnabled = process.env.TURNSTILE_ENABLED === 'true';
+  const enabled = typeof merged.turnstileEnabled === 'boolean' ? uiEnabled : envEnabled;
+  const cacheSeconds = (merged as any).turnstile?.cacheDurationSeconds ?? parseInt(process.env.TURNSTILE_CACHE_DURATION || '300');
+  const bypassAuthenticated = process.env.TURNSTILE_BYPASS_AUTHENTICATED !== 'false';
+  const requiredForIPUsers = process.env.TURNSTILE_REQUIRED_FOR_IP_USERS !== 'false';
   return {
-    enabled: process.env.TURNSTILE_ENABLED === 'true',
-    bypassAuthenticated: process.env.TURNSTILE_BYPASS_AUTHENTICATED !== 'false',
-    requiredForIPUsers: process.env.TURNSTILE_REQUIRED_FOR_IP_USERS !== 'false',
-    cacheDuration: parseInt(process.env.TURNSTILE_CACHE_DURATION || '300') * 1000, // Convert to ms
+    enabled,
+    bypassAuthenticated,
+    requiredForIPUsers,
+    cacheDuration: Math.max(1, cacheSeconds) * 1000,
     siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
   };
 }

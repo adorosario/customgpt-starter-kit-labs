@@ -3,10 +3,10 @@
     "jwtSecret": "your-jwt-secret-key-here",
     "limits": {
       "global": {
-        "minute": 100,
-        "hour": 1000,
-        "day": 10000,
-        "month": 300000
+        "minute": 10,
+        "hour": 100,
+        "day": 1000,
+        "month": 30000
       }
     },
     "routesInScope": [

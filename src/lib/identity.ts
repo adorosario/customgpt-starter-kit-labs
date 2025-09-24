@@ -4,6 +4,7 @@ import { jwtVerify, decodeJwt } from 'jose';
 import { z } from 'zod';
 import fs from 'fs';
 import path from 'path';
+import { Redis } from '@upstash/redis';
 
 // Configuration schema
 const ConfigSchema = z.object({
@@ -25,29 +26,30 @@ type Config = z.infer<typeof ConfigSchema>;
 
 let cachedConfig: Config | null = null;
 let configLastModified = 0;
+let cachedMergedConfig: Config | null = null;
+let lastRedisLoadMs = 0;
+const REDIS_REFRESH_THROTTLE_MS = 3000;
 
 /**
- * Load and validate configuration from config/rate-limits.json
+ * Load and validate configuration from Redis (overrides) and config/rate-limits.json (defaults)
  */
 function loadConfig(): Config {
+  // 1) Load base config from file (with caching based on mtime)
+  let fileConfig: Config | null = null;
   try {
     const configPath = path.join(process.cwd(), 'config', 'rate-limits.json');
     const stats = fs.statSync(configPath);
-    
-    // Check if config needs to be reloaded
     if (!cachedConfig || stats.mtimeMs > configLastModified) {
       const configContent = fs.readFileSync(configPath, 'utf-8');
       const parsedConfig = JSON.parse(configContent);
       cachedConfig = ConfigSchema.parse(parsedConfig);
       configLastModified = stats.mtimeMs;
-      console.log('[Identity] Configuration loaded successfully');
+      console.log('[Identity] Base configuration (file) loaded');
     }
-    
-    return cachedConfig;
+    fileConfig = cachedConfig!;
   } catch (error) {
-    console.error('[Identity] Failed to load config:', error);
-    // Return default configuration
-    return {
+    console.error('[Identity] Failed to load file config:', error);
+    fileConfig = {
       identityOrder: ['jwt-sub', 'session-cookie', 'ip'],
       jwtSecret: undefined,
       limits: {
@@ -62,6 +64,86 @@ function loadConfig(): Config {
       turnstileEnabled: false,
     };
   }
+
+  // 2) Kick best-effort refresh of Redis overrides and return last known merged config
+  maybeRefreshRedisOverrides(fileConfig);
+  return cachedMergedConfig || fileConfig;
+}
+
+function isPlainObject(value: any) {
+  return Object.prototype.toString.call(value) === '[object Object]';
+}
+
+function deepMerge<T>(target: T, source: any): T {
+  if (!isPlainObject(source)) return target;
+  const output: any = Array.isArray(target) ? [...(target as any)] : { ...(target as any) };
+  for (const key of Object.keys(source)) {
+    const srcVal = (source as any)[key];
+    const tgtVal = (output as any)[key];
+    if (isPlainObject(srcVal) && isPlainObject(tgtVal)) {
+      (output as any)[key] = deepMerge(tgtVal, srcVal);
+    } else {
+      (output as any)[key] = srcVal;
+    }
+  }
+  return output;
+}
+
+async function fetchRedisOverrides(): Promise<any | null> {
+  try {
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) return null;
+    const redis = new Redis({ url, token });
+    const data = await redis.get('admin:rate-limit-config');
+    return data || null;
+  } catch (e) {
+    console.warn('[Identity] Failed to fetch Redis overrides:', e);
+    return null;
+  }
+}
+
+function mapOverridesToConfig(baseConfig: Config, overrides: any): Config {
+  if (!overrides || typeof overrides !== 'object') return baseConfig;
+  const merged = deepMerge(baseConfig, {});
+  // Limits
+  if (overrides.limits && overrides.limits.global) {
+    merged.limits.global.minute = overrides.limits.global.minute ?? merged.limits.global.minute;
+    merged.limits.global.hour = overrides.limits.global.hour ?? merged.limits.global.hour;
+    merged.limits.global.day = overrides.limits.global.day ?? merged.limits.global.day;
+    merged.limits.global.month = overrides.limits.global.month ?? merged.limits.global.month;
+  }
+  // routesInScope overrides
+  if (Array.isArray(overrides.routesInScope) && overrides.routesInScope.length > 0) {
+    (merged as any).routesInScope = overrides.routesInScope;
+  }
+  // Turnstile flag
+  if (overrides.turnstile && typeof overrides.turnstile.enabled === 'boolean') {
+    merged.turnstileEnabled = overrides.turnstile.enabled;
+  }
+  // Optional jwtSecret override
+  if (typeof overrides.jwtSecret === 'string' && overrides.jwtSecret.length > 0) {
+    (merged as any).jwtSecret = overrides.jwtSecret;
+  }
+  return merged;
+}
+
+function maybeRefreshRedisOverrides(fileConfig: Config) {
+  const now = Date.now();
+  if (now - lastRedisLoadMs < REDIS_REFRESH_THROTTLE_MS) {
+    // Return quickly; a recent refresh occurred
+    return;
+  }
+  lastRedisLoadMs = now;
+  // Fire and forget
+  fetchRedisOverrides().then((overrides) => {
+    try {
+      const merged = mapOverridesToConfig(fileConfig, overrides);
+      cachedMergedConfig = merged;
+    } catch (e) {
+      // Keep previous cache on error
+    }
+  }).catch(() => {});
 }
 
 /**
