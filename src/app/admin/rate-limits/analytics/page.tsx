@@ -63,21 +63,8 @@ export default function AnalyticsPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       const a = json.data;
-      // Adapt minimal data; keep simple visuals
-      const now = Date.now();
-      const trends = Array.from({ length: 24 }, (_, i) => ({
-        timestamp: new Date(now - (23 - i) * 3600000).toISOString(),
-        requests: Math.floor((a.requestsPerMinute || 0) * (0.5 + Math.random())),
-        blocked: Math.floor((a.blockedRequests || 0) * Math.random()),
-        users: Math.floor((a.activeUsers || 0) * Math.random()),
-      }));
-      const mockTop = (a.topUsers || []).map((u: any) => ({
-        identityKey: u.identityKey,
-        identityType: u.identityType,
-        requests: u.requestCount || 0,
-        blocked: 0,
-        lastActivity: new Date().toISOString(),
-      }));
+      
+      // Use the new data structure from the API
       const out: AnalyticsData = {
         overview: {
           totalRequests: a.requestsPerMinute || 0,
@@ -85,10 +72,16 @@ export default function AnalyticsPage() {
           uniqueUsers: a.totalUsers || 0,
           averageResponseTime: 0,
         },
-        trends,
-        topUsers: mockTop,
-        topRoutes: [],
-        hourlyDistribution: trends.map((t, idx) => ({ hour: idx, requests: t.requests, blocked: t.blocked })),
+        trends: a.trends || [],
+        topUsers: (a.topUsers || []).map((u: any) => ({
+          identityKey: u.identityKey,
+          identityType: u.identityType,
+          requests: u.requestCount || 0,
+          blocked: 0,
+          lastActivity: new Date().toISOString(),
+        })),
+        topRoutes: a.topRoutes || [],
+        hourlyDistribution: a.hourlyDistribution || [],
       };
       setData(out);
     } catch (error) {
@@ -215,78 +208,49 @@ export default function AnalyticsPage() {
         />
       </MetricsGrid>
 
-      {/* Modern charts with better styling */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Request Trends */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Request Trends</h3>
-            <div className="flex items-center space-x-4 text-sm">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-gray-600 font-medium">Requests</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                <span className="text-gray-600 font-medium">Blocked</span>
-              </div>
+      {/* Request Trends Chart */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Request Trends (Last 12 Hours)</h3>
+          <div className="flex items-center space-x-4 text-sm">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+              <span className="text-gray-600 font-medium">Requests</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+              <span className="text-gray-600 font-medium">Blocked</span>
             </div>
           </div>
-          
-          {/* Simple chart representation */}
-          <div className="h-64 flex items-end space-x-1">
-            {data.trends.slice(-12).map((point, i) => {
-              const maxRequests = Math.max(...data.trends.map(p => p.requests));
-              const requestHeight = (point.requests / maxRequests) * 240;
-              const blockedHeight = (point.blocked / maxRequests) * 240;
-              
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex flex-col justify-end h-60">
-                    <div 
-                      className="w-full bg-blue-500 rounded-t"
-                      style={{ height: `${requestHeight}px` }}
-                      title={`${point.requests} requests`}
-                    ></div>
-                    <div 
-                      className="w-full bg-red-500"
-                      style={{ height: `${blockedHeight}px` }}
-                      title={`${point.blocked} blocked`}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2 font-medium">
-                    {new Date(point.timestamp).getHours()}:00
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
-
-        {/* Hourly Distribution */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Hourly Distribution</h3>
-          <div className="h-64 flex items-end space-x-1">
-            {data.hourlyDistribution.map((point, i) => {
-              const maxRequests = Math.max(...data.hourlyDistribution.map(p => p.requests));
-              const height = (point.requests / maxRequests) * 240;
-              
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex justify-end h-60">
-                    <div 
-                      className="w-full bg-blue-500 rounded-t"
-                      style={{ height: `${height}px` }}
-                      title={`Hour ${point.hour}: ${point.requests} requests`}
-                    ></div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-2 font-medium">
-                    {point.hour}
-                  </div>
+        
+        {/* Simple chart representation */}
+        <div className="h-64 flex items-end space-x-1">
+          {data.trends.slice(-12).map((point, i) => {
+            const maxRequests = Math.max(...data.trends.map(p => p.requests));
+            const requestHeight = (point.requests / maxRequests) * 240;
+            const blockedHeight = (point.blocked / maxRequests) * 240;
+            
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center">
+                <div className="w-full flex flex-col justify-end h-60">
+                  <div 
+                    className="w-full bg-blue-500 rounded-t"
+                    style={{ height: `${requestHeight}px` }}
+                    title={`${point.requests} requests`}
+                  ></div>
+                  <div 
+                    className="w-full bg-red-500"
+                    style={{ height: `${blockedHeight}px` }}
+                    title={`${point.blocked} blocked`}
+                  ></div>
                 </div>
-              );
-            })}
-          </div>
+                <div className="text-xs text-gray-500 mt-2 font-medium">
+                  {new Date(point.timestamp).getHours()}:00
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -356,26 +320,48 @@ export default function AnalyticsPage() {
                     Requests
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
+                    Blocked
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-900 uppercase tracking-wider">
                     Avg Time
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {data.topRoutes.map((route, i) => (
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-gray-900">
-                        {route.route}
+                {data.topRoutes.length > 0 ? (
+                  data.topRoutes.map((route, i) => (
+                    <tr key={i} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-semibold text-gray-900 font-mono">
+                          {route.route}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {route.requests.toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          route.blocked > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {route.blocked}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        {route.averageResponseTime}ms
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                      <div className="flex flex-col items-center">
+                        <Activity className="h-8 w-8 text-gray-300 mb-2" />
+                        <p>No route data available</p>
+                        <p className="text-sm">Routes will appear here as traffic is generated</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {route.requests.toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {route.averageResponseTime}ms
-                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
