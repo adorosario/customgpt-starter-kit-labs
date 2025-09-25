@@ -11,7 +11,8 @@
     },
     "routesInScope": [
       "/api/proxy/projects",
-      "/api/proxy/user"
+      "/api/proxy/user",
+      "/api/admin/test"
     ],
     "turnstileEnabled": true,
     "turnstile": {

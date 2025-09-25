@@ -21,6 +21,7 @@ const navigation = [
   { name: "Users", href: "/admin/rate-limits/users", icon: Users },
   { name: "Configuration", href: "/admin/rate-limits/config", icon: Settings },
   { name: "Analytics", href: "/admin/rate-limits/analytics", icon: BarChart3 },
+  { name: "Demo/Test", href: "/admin/rate-limits/demo", icon: Shield },
 ]
 
 export function AdminLayout({ children, user }: AdminLayoutProps) {
