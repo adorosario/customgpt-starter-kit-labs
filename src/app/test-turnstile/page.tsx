@@ -219,7 +219,7 @@ export default function TurnstileTestPage() {
           </h2>
           <ol className="list-decimal list-inside space-y-2 text-gray-600 dark:text-gray-300">
             <li>Complete the Turnstile challenge above</li>
-            <li>Click "Test API Call" to verify the integration</li>
+            <li>Click &quot;Test API Call&quot; to verify the integration</li>
             <li>Check the test results for success/failure details</li>
             <li>Open browser dev tools to see network requests</li>
             <li>Check the server logs for verification attempts</li>
