@@ -149,6 +149,11 @@ export function isIPAllowed(ip: string, allowedIPs?: string[]): boolean {
     return true; // No IP restrictions
   }
   
+  // Check for wildcard to allow all IPs
+  if (allowedIPs.includes('*')) {
+    return true;
+  }
+  
   return allowedIPs.some(allowedIP => {
     if (allowedIP.includes('/')) {
       // CIDR notation - simplified check for common cases
