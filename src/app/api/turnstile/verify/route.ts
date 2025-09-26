@@ -372,20 +372,9 @@ export async function GET() {
   return NextResponse.json({ enabled: isEnabled, configured: hasSecretKey && hasSiteKey, timestamp: new Date().toISOString() });
 }
 
-/**
- * GET /api/turnstile/verify/status
- * Return verified status for current identity
- */
-export async function GET_status(request: NextRequest) {
-  try {
-    const { getIdentityKey } = await import('@/lib/identity');
-    const identityKey = await getIdentityKey(request);
-    const status = await getVerificationStatus(identityKey);
-    return NextResponse.json({ enabled: process.env.TURNSTILE_ENABLED === 'true', verified: status.verified, ttlSeconds: status.ttlSeconds });
-  } catch (e) {
-    return NextResponse.json({ enabled: process.env.TURNSTILE_ENABLED === 'true', verified: false, ttlSeconds: null }, { status: 200 });
-  }
-}
+// Note: GET_status was removed as it's not a valid Next.js route export
+// If you need a status endpoint, create a separate route file at:
+// src/app/api/turnstile/verify/status/route.ts
 
 // Export types for use in other files
 export type { VerifySuccessResponse, VerifyErrorResponse };
