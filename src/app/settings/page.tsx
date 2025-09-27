@@ -516,7 +516,7 @@ function RateLimitingContent({
     { id: 'users' as RateLimitingTab, name: 'Users', icon: Users },
     { id: 'configuration' as RateLimitingTab, name: 'Configuration', icon: Settings },
     { id: 'analytics' as RateLimitingTab, name: 'Analytics', icon: BarChart3 },
-    { id: 'demo' as RateLimitingTab, name: 'Demo/Test', icon: Shield },
+    { id: 'demo' as RateLimitingTab, name: 'Playground', icon: Shield },
   ];
 
   return (
