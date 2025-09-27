@@ -15,6 +15,7 @@
       "/api/admin/test"
     ],
     "turnstileEnabled": true,
+    "rateLimitingEnabled": false,
     "turnstile": {
       "enabled": true,
       "bypassAuthenticated": true,

@@ -20,6 +20,7 @@ const ConfigSchema = z.object({
   }),
   routesInScope: z.array(z.string()),
   turnstileEnabled: z.boolean().optional(),
+  rateLimitingEnabled: z.boolean().optional(),
 });
 
 type Config = z.infer<typeof ConfigSchema>;
@@ -62,6 +63,7 @@ function loadConfig(): Config {
       },
       routesInScope: ['/api/proxy/projects', '/api/proxy/user'],
       turnstileEnabled: false,
+      rateLimitingEnabled: false,
     };
   }
 
@@ -120,6 +122,10 @@ function mapOverridesToConfig(baseConfig: Config, overrides: any): Config {
   // Turnstile flag
   if (overrides.turnstile && typeof overrides.turnstile.enabled === 'boolean') {
     merged.turnstileEnabled = overrides.turnstile.enabled;
+  }
+  // Rate limiting enabled flag
+  if (typeof overrides.rateLimitingEnabled === 'boolean') {
+    merged.rateLimitingEnabled = overrides.rateLimitingEnabled;
   }
   // Optional jwtSecret override
   if (typeof overrides.jwtSecret === 'string' && overrides.jwtSecret.length > 0) {

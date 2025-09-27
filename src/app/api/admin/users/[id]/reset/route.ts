@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { resetUserCounters } from '@/lib/admin/analytics';
-import { logAdminAction } from '@/lib/admin/auth';
 
 const ResetSchema = z.object({
   window: z.enum(['minute', 'hour', 'day', 'all']).optional(),
   confirm: z.boolean(),
 });
 
-export const POST = createAdminHandler(async (request: NextRequest, user: any) => {
+export async function POST(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
@@ -45,13 +43,6 @@ export const POST = createAdminHandler(async (request: NextRequest, user: any) =
     const windowToReset = window === 'all' ? undefined : window;
     await resetUserCounters(identityKey, windowToReset);
     
-    // Log admin action
-    logAdminAction(user, 'reset_user_counters', { 
-      identityKey, 
-      window: window || 'all',
-      timestamp: new Date().toISOString(),
-    });
-    
     return NextResponse.json({
       success: true,
       message: `Reset ${window || 'all'} counters for ${identityKey}`,
@@ -69,4 +60,4 @@ export const POST = createAdminHandler(async (request: NextRequest, user: any) =
       { status: 500 }
     );
   }
-});
+}

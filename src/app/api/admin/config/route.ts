@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { Redis } from '@upstash/redis';
 
 // Basic schema guard; keep permissive and validate shapes in UI
@@ -18,7 +17,7 @@ function getRedis() {
 
 const CONFIG_KEY = 'admin:rate-limit-config';
 
-export const GET = createAdminHandler(async () => {
+export async function GET() {
   try {
     const redis = getRedis();
     const override = await redis.get(CONFIG_KEY);
@@ -37,9 +36,9 @@ export const GET = createAdminHandler(async () => {
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to load config' }, { status: 500 });
   }
-});
+}
 
-export const POST = createAdminHandler(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     if (!isObject(body)) {
@@ -62,6 +61,7 @@ export const POST = createAdminHandler(async (request: NextRequest) => {
         routes: body.routes || {},
         identityMultipliers: body.identityMultipliers || { jwt: 2.0, session: 1.5, ip: 1.0 },
         routesInScope: Array.isArray(body.routesInScope) ? body.routesInScope : undefined,
+        rateLimitingEnabled: body.rateLimitingEnabled !== undefined ? !!body.rateLimitingEnabled : true,
         turnstile: {
           enabled: !!body.turnstile?.enabled,
           bypassAuthenticated: !!body.turnstile?.bypassAuthenticated,
@@ -97,6 +97,6 @@ export const POST = createAdminHandler(async (request: NextRequest) => {
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to save config' }, { status: 500 });
   }
-});
+}
 
 

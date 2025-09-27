@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { getAnalytics } from '@/lib/admin/analytics';
-import { logAdminAction } from '@/lib/admin/auth';
 
-export const GET = createAdminHandler(async (request: NextRequest, user: any) => {
+export async function GET(request: NextRequest) {
   try {
     const analytics = await getAnalytics();
-    
-    // Log admin action
-    logAdminAction(user, 'view_analytics');
     
     return NextResponse.json({
       success: true,
@@ -23,4 +18,4 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
       { status: 500 }
     );
   }
-});
+}

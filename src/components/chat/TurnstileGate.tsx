@@ -199,15 +199,15 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
   // Show loading state while checking configuration
   if (isLoading) {
     return (
-      <div className={cn('flex items-center justify-center p-8', className)}>
+      <div className={cn('flex items-center justify-center min-h-[400px] w-full', className)}>
         <div className="flex items-center gap-3 text-muted-foreground">
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           >
-            <Shield className="w-5 h-5" />
+            <Shield className="w-6 h-6" />
           </motion.div>
-          <span className="text-sm">Checking security requirements...</span>
+          <span className="text-base">Checking security requirements...</span>
         </div>
       </div>
     );
@@ -220,7 +220,7 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
 
   // Render Turnstile challenge
   return (
-    <div className={cn('turnstile-gate', className)}>
+    <div className={cn('turnstile-gate flex items-center justify-center min-h-[600px] w-full', className)}>
       <AnimatePresence mode="wait">
         <motion.div
           key="challenge"
@@ -228,34 +228,36 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.3 }}
-          className="max-w-md mx-auto"
+          className="max-w-md w-full mx-auto px-4"
         >
           {/* Header */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-4">
-              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full mb-6">
+              <Shield className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">
+            <h2 className="text-2xl font-semibold text-foreground mb-3">
               Security Verification
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground leading-relaxed">
               Please complete this quick security check to continue chatting. 
               This helps us prevent automated abuse.
             </p>
           </div>
 
           {/* Turnstile Challenge */}
-          <div className="flex justify-center mb-6">
-            <TurnstileChallenge
-              siteKey={siteKey!}
-              onSuccess={handleSuccess}
-              onError={handleError}
-              onExpire={handleExpire}
-              theme="auto"
-              size="normal"
-              action="chat-access"
-              className="w-full max-w-sm"
-            />
+          <div className="flex justify-center mb-8">
+            <div className="w-full max-w-xs">
+              <TurnstileChallenge
+                siteKey={siteKey!}
+                onSuccess={handleSuccess}
+                onError={handleError}
+                onExpire={handleExpire}
+                theme="auto"
+                size="normal"
+                action="chat-access"
+                className="w-full"
+              />
+            </div>
           </div>
 
           {/* Error State */}
@@ -263,7 +265,7 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-4"
+              className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg mb-6"
             >
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
@@ -290,7 +292,7 @@ export const TurnstileGate: React.FC<TurnstileGateProps> = ({
 
           {/* Help Text */}
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-relaxed">
               Having trouble? This verification is provided by Cloudflare and 
               helps protect against automated attacks.
             </p>

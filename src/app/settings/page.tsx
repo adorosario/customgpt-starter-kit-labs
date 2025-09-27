@@ -28,6 +28,10 @@ import {
   CheckCircle,
   AlertCircle,
   Info,
+  Activity,
+  Home,
+  Users,
+  BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,13 +41,24 @@ import { Card } from '@/components/ui/card';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { cn } from '@/lib/utils';
 import { useBreakpoint } from '@/hooks/useMediaQuery';
+import { RateLimitingSettings } from '@/components/settings/RateLimitingSettings';
+import { AdminDashboard } from '@/components/settings/admin/AdminDashboard';
+import { AdminUsers } from '@/components/settings/admin/AdminUsers';
+import { AdminConfiguration } from '@/components/settings/admin/AdminConfiguration';
+import { AdminAnalytics } from '@/components/settings/admin/AdminAnalytics';
+import { AdminDemo } from '@/components/settings/admin/AdminDemo';
 
 /**
  * Settings Page Component
  * 
  * Settings interface for theme and viewing server status
  */
+type SettingsTab = 'general' | 'rate-limiting';
+type RateLimitingTab = 'dashboard' | 'users' | 'configuration' | 'analytics' | 'demo';
+
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [activeRateLimitingTab, setActiveRateLimitingTab] = useState<RateLimitingTab>('dashboard');
   const [serverStatus, setServerStatus] = useState<'checking' | 'configured' | 'not-configured'>('checking');
   const { theme, setTheme } = useConfigStore();
   const { isMobile } = useBreakpoint();
@@ -65,6 +80,8 @@ export default function SettingsPage() {
     
     checkServerStatus();
   }, []);
+
+  // Admin authentication is no longer required
   
 
   const handleThemeChange = (newTheme: 'light' | 'dark') => {
@@ -105,11 +122,50 @@ export default function SettingsPage() {
           </div>
         )}
 
+        {/* Tab Navigation */}
+        <div className="border-b border-border">
+          <nav className={cn(
+            "flex space-x-8",
+            isMobile ? "px-4" : ""
+          )}>
+            <button
+              onClick={() => setActiveTab('general')}
+              className={cn(
+                "py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                activeTab === 'general'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                General
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('rate-limiting')}
+              className={cn(
+                "py-4 px-1 border-b-2 font-medium text-sm transition-colors",
+                activeTab === 'rate-limiting'
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Rate Limiting
+              </div>
+            </button>
+          </nav>
+        </div>
+
         {/* Scrollable Content */}
         <div className={cn(
           "flex-1 overflow-y-auto",
           isMobile ? "px-4 py-4 pb-20 space-y-6" : "space-y-6"
         )}>
+          {activeTab === 'general' && (
+            <>
           {/* Server Configuration Status */}
           <Card className={cn(
             "bg-card text-card-foreground border-border",
@@ -427,8 +483,80 @@ export default function SettingsPage() {
             </div>
           </div>
         </Card>
+            </>
+          )}
+          
+          {activeTab === 'rate-limiting' && (
+            <RateLimitingContent
+              activeRateLimitingTab={activeRateLimitingTab}
+              setActiveRateLimitingTab={setActiveRateLimitingTab}
+              isMobile={isMobile}
+            />
+          )}
         </div>
       </div>
     </PageLayout>
+  );
+}
+
+// Rate Limiting Content Component
+interface RateLimitingContentProps {
+  activeRateLimitingTab: RateLimitingTab;
+  setActiveRateLimitingTab: (tab: RateLimitingTab) => void;
+  isMobile: boolean;
+}
+
+function RateLimitingContent({ 
+  activeRateLimitingTab, 
+  setActiveRateLimitingTab, 
+  isMobile 
+}: RateLimitingContentProps) {
+  const rateLimitingTabs = [
+    { id: 'dashboard' as RateLimitingTab, name: 'Dashboard', icon: Home },
+    { id: 'users' as RateLimitingTab, name: 'Users', icon: Users },
+    { id: 'configuration' as RateLimitingTab, name: 'Configuration', icon: Settings },
+    { id: 'analytics' as RateLimitingTab, name: 'Analytics', icon: BarChart3 },
+    { id: 'demo' as RateLimitingTab, name: 'Demo/Test', icon: Shield },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Rate Limiting Sub-Tab Navigation */}
+      <div className="border-b border-border">
+        <nav className={cn(
+          "flex space-x-8 overflow-x-auto",
+          isMobile ? "px-0" : ""
+        )}>
+          {rateLimitingTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveRateLimitingTab(tab.id)}
+              className={cn(
+                "py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap",
+                activeRateLimitingTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                <tab.icon className="w-4 h-4" />
+                {tab.name}
+              </div>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Rate Limiting Tab Content */}
+      <div className={cn(
+        isMobile ? "space-y-4" : "space-y-6"
+      )}>
+        {activeRateLimitingTab === 'dashboard' && <RateLimitingSettings />}
+        {activeRateLimitingTab === 'users' && <AdminUsers />}
+        {activeRateLimitingTab === 'configuration' && <AdminConfiguration />}
+        {activeRateLimitingTab === 'analytics' && <AdminAnalytics />}
+        {activeRateLimitingTab === 'demo' && <AdminDemo />}
+      </div>
+    </div>
   );
 }

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { getAllUsers, type SearchFilters } from '@/lib/admin/analytics';
-import { logAdminAction } from '@/lib/admin/auth';
 
-export const GET = createAdminHandler(async (request: NextRequest, user: any) => {
+export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const searchParams = url.searchParams;
@@ -23,9 +21,6 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
     // Get users data
     const result = await getAllUsers(filters);
     
-    // Log admin action
-    logAdminAction(user, 'view_users', { filters });
-    
     return NextResponse.json({
       success: true,
       data: result.users,
@@ -41,4 +36,4 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
       { status: 500 }
     );
   }
-});
+}

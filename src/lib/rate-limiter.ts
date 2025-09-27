@@ -283,6 +283,21 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
     const url = new URL(request.url);
     const path = url.pathname;
     
+    // Check if rate limiting is enabled
+    const identityConfig = getIdentityConfig();
+    if (!identityConfig.rateLimitingEnabled) {
+      return {
+        allowed: true,
+        headers: {
+          'X-RateLimit-Enabled': 'false'
+        },
+        remaining: 999999,
+        resetTime: getCurrentTimestamp() + 3600,
+        limit: 999999,
+        window: 'disabled'
+      };
+    }
+    
     // Check if route is in scope
     if (!isRouteInScope(path)) {
       return {
@@ -326,17 +341,17 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
         turnstileVerification: turnstileResult
       };
     }
-    const config = getIdentityConfig();
+    const rateLimitConfig = getIdentityConfig();
     
     // Get route-specific limits or fall back to global limits
-    const routeLimits = getRouteSpecificLimits(path, config);
-    const limits = routeLimits || config.limits.global;
+    const routeLimits = getRouteSpecificLimits(path, rateLimitConfig);
+    const limits = routeLimits || rateLimitConfig.limits.global;
     
     console.log('[RateLimit] Using limits for path:', {
       path,
       limits,
       isRouteSpecific: !!routeLimits,
-      routePattern: routeLimits ? getMatchingRoutePattern(path, config) : 'global'
+      routePattern: routeLimits ? getMatchingRoutePattern(path, rateLimitConfig) : 'global'
     });
     
     // Check all configured windows in order of restrictiveness

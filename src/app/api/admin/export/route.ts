@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { getAllUsers, exportUsersToCSV, type SearchFilters } from '@/lib/admin/analytics';
-import { logAdminAction } from '@/lib/admin/auth';
 
-export const GET = createAdminHandler(async (request: NextRequest, user: any) => {
+export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const searchParams = url.searchParams;
@@ -29,13 +27,6 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
     
     // Get all users data for export
     const result = await getAllUsers(filters);
-    
-    // Log admin action
-    logAdminAction(user, 'export_data', { 
-      format, 
-      userCount: result.totalCount,
-      filters 
-    });
     
     if (format === 'csv') {
       const csvData = exportUsersToCSV(result.users);
@@ -68,4 +59,4 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
       { status: 500 }
     );
   }
-});
+}

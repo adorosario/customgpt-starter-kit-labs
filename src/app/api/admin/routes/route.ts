@@ -1,19 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRouteProtectionStatus, getAllRouteStatus } from '@/lib/rate-limiter';
 
-// Simple admin access check
-async function validateAdminAccess(request: NextRequest) {
-  const token = request.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) {
-    throw new Error('No authorization token provided');
-  }
-  // Add your admin token validation logic here
-  return true;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    await validateAdminAccess(request);
     
     const url = new URL(request.url);
     const path = url.searchParams.get('path');

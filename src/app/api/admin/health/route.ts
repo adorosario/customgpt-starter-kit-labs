@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { Redis } from '@upstash/redis';
 
 function getRedis() {
@@ -11,7 +10,7 @@ function getRedis() {
   return new Redis({ url, token });
 }
 
-export const GET = createAdminHandler(async (_request: NextRequest) => {
+export async function GET(_request: NextRequest) {
   const health: any = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
@@ -53,6 +52,6 @@ export const GET = createAdminHandler(async (_request: NextRequest) => {
   }
 
   return NextResponse.json({ success: true, data: health });
-});
+}
 
 

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminHandler } from '@/lib/admin/middleware';
 import { getUserDetails } from '@/lib/admin/analytics';
-import { logAdminAction } from '@/lib/admin/auth';
 
-export const GET = createAdminHandler(async (request: NextRequest, user: any) => {
+export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
@@ -25,9 +23,6 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
       );
     }
     
-    // Log admin action
-    logAdminAction(user, 'view_user_details', { identityKey });
-    
     return NextResponse.json({
       success: true,
       data: userDetails,
@@ -40,4 +35,4 @@ export const GET = createAdminHandler(async (request: NextRequest, user: any) =>
       { status: 500 }
     );
   }
-});
+}
