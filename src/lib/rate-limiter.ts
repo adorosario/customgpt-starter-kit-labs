@@ -215,6 +215,57 @@ async function checkWindowLimit(
 }
 
 /**
+ * Get route-specific limits for a given path
+ */
+function getRouteSpecificLimits(path: string, config: any): any | null {
+  if (!(config as any).routes) return null;
+  
+  // Find matching route pattern
+  for (const [pattern, limits] of Object.entries((config as any).routes)) {
+    if (pathMatchesPattern(path, pattern)) {
+      console.log('[RateLimit] Found route-specific limits:', { pattern, limits, path });
+      return limits;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Get the matching route pattern for a path
+ */
+function getMatchingRoutePattern(path: string, config: any): string | null {
+  if (!(config as any).routes) return null;
+  
+  for (const pattern of Object.keys((config as any).routes)) {
+    if (pathMatchesPattern(path, pattern)) {
+      return pattern;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Check if a path matches a route pattern
+ */
+function pathMatchesPattern(path: string, pattern: string): boolean {
+  // Handle wildcard patterns like "/api/users/*"
+  if (pattern.endsWith('*')) {
+    const basePattern = pattern.slice(0, -1);
+    return path.startsWith(basePattern);
+  }
+  
+  // Handle exact matches
+  if (pattern.endsWith('/')) {
+    return path === pattern || path.startsWith(pattern);
+  }
+  
+  // Handle partial matches
+  return path.startsWith(pattern);
+}
+
+/**
  * Check if a route is in scope for rate limiting
  */
 function isRouteInScope(path: string): boolean {
@@ -276,7 +327,17 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
       };
     }
     const config = getIdentityConfig();
-    const limits = config.limits.global;
+    
+    // Get route-specific limits or fall back to global limits
+    const routeLimits = getRouteSpecificLimits(path, config);
+    const limits = routeLimits || config.limits.global;
+    
+    console.log('[RateLimit] Using limits for path:', {
+      path,
+      limits,
+      isRouteSpecific: !!routeLimits,
+      routePattern: routeLimits ? getMatchingRoutePattern(path, config) : 'global'
+    });
     
     // Check all configured windows in order of restrictiveness
     const windows = ['minute', 'hour', 'day', 'month'] as const;
@@ -356,6 +417,76 @@ export async function applyRateLimit(request: NextRequest): Promise<RateLimitRes
       window: 'error'
     };
   }
+}
+
+/**
+ * Get route protection status for admin panel
+ */
+export function getRouteProtectionStatus(path: string): {
+  isProtected: boolean;
+  isInScope: boolean;
+  routePattern: string | null;
+  limits: any | null;
+  scope: string[];
+} {
+  const config = getIdentityConfig();
+  const isInScope = isRouteInScope(path);
+  const routePattern = getMatchingRoutePattern(path, config);
+  const limits = getRouteSpecificLimits(path, config);
+  
+  return {
+    isProtected: isInScope,
+    isInScope,
+    routePattern,
+    limits: limits || config.limits.global,
+    scope: config.routesInScope || []
+  };
+}
+
+/**
+ * Get all route patterns and their protection status
+ */
+export function getAllRouteStatus(): Array<{
+  pattern: string;
+  isProtected: boolean;
+  limits: any | null;
+  type: 'scope' | 'route-specific' | 'global';
+}> {
+  const config = getIdentityConfig();
+  const results: Array<{
+    pattern: string;
+    isProtected: boolean;
+    limits: any | null;
+    type: 'scope' | 'route-specific' | 'global';
+  }> = [];
+  
+  // Add routes in scope
+  const scopeRoutes = config.routesInScope || [];
+  scopeRoutes.forEach(route => {
+    const routeLimits = getRouteSpecificLimits(route, config);
+    results.push({
+      pattern: route,
+      isProtected: true,
+      limits: routeLimits || config.limits.global,
+      type: routeLimits ? 'route-specific' : 'scope'
+    });
+  });
+  
+  // Add route-specific patterns
+  if ((config as any).routes) {
+    Object.keys((config as any).routes).forEach(pattern => {
+      if (!scopeRoutes.includes(pattern)) {
+        results.push({
+          pattern,
+          isProtected: false,
+          limits: (config as any).routes[pattern],
+          type: 'route-specific'
+        });
+      }
+    });
+  }
+  
+  return results;
 }
 
 /**
