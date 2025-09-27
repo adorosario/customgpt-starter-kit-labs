@@ -3,7 +3,7 @@
     "jwtSecret": "your-jwt-secret-key-here",
     "limits": {
       "global": {
-        "minute": 10,
+        "minute": 1000,
         "hour": 100,
         "day": 1000,
         "month": 30000
