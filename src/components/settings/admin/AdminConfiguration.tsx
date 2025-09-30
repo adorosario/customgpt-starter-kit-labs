@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Save, RotateCcw, AlertCircle, CheckCircle, Settings, Shield, Clock } from "lucide-react"
+import { Save, RotateCcw, AlertCircle, CheckCircle, Settings, Shield, Clock, Activity } from "lucide-react"
 
 interface RateLimitConfig {
   global: {
@@ -17,6 +17,8 @@ interface RateLimitConfig {
       perDay?: number
     }
   }
+  routesInScope: string[]
+  rateLimitingEnabled: boolean
 }
 
 interface RouteStatus {
@@ -42,6 +44,7 @@ export function AdminConfiguration() {
   const [newRoute, setNewRoute] = useState<RouteLimit>({ pattern: "", perMinute: 60, perHour: 3600, perDay: 86400 })
   const [routeLimits, setRouteLimits] = useState<RouteLimit[]>([])
   const [routeStatuses, setRouteStatuses] = useState<RouteStatus[]>([])
+  const [newRouteInScope, setNewRouteInScope] = useState("")
 
   useEffect(() => {
     fetchConfig()
@@ -63,7 +66,8 @@ export function AdminConfiguration() {
         ...(override.routes || {}),
       }
       const src = Object.keys(override).length ? { ...defaults, ...override, routes: mergedRoutes } : { ...defaults, routes: mergedRoutes }
-       const uiConfig: RateLimitConfig = {
+      
+      const uiConfig: RateLimitConfig = {
         global: {
           defaultPerMinute: src.limits?.global?.minute ?? 60,
           defaultPerHour: src.limits?.global?.hour ?? 3600,
@@ -73,6 +77,8 @@ export function AdminConfiguration() {
           ) || ["jwt", "session", "ip"],
         },
         routes: src.routes || {},
+        routesInScope: src.routesInScope || ["/api/proxy/projects", "/api/proxy/user"],
+        rateLimitingEnabled: src.rateLimitingEnabled ?? true,
       }
       setConfig(uiConfig)
       setOriginalConfig(JSON.parse(JSON.stringify(uiConfig)))
@@ -130,6 +136,8 @@ export function AdminConfiguration() {
           },
           {} as { [route: string]: { perMinute?: number; perHour?: number; perDay?: number } },
         ),
+        routesInScope: config.routesInScope,
+        rateLimitingEnabled: config.rateLimitingEnabled,
       }
       const res = await fetch("/api/admin/config", {
         method: "POST",
@@ -190,6 +198,33 @@ export function AdminConfiguration() {
 
   const removeRouteLimit = (index: number) => {
     setRouteLimits(routeLimits.filter((_, i) => i !== index))
+  }
+
+
+  const addRouteInScope = () => {
+    if (!newRouteInScope.trim()) return
+    if (!config) return
+    setConfig({
+      ...config,
+      routesInScope: [...config.routesInScope, newRouteInScope.trim()],
+    })
+    setNewRouteInScope("")
+  }
+
+  const removeRouteInScope = (index: number) => {
+    if (!config) return
+    setConfig({
+      ...config,
+      routesInScope: config.routesInScope.filter((_, i) => i !== index),
+    })
+  }
+
+  const toggleRateLimiting = () => {
+    if (!config) return
+    setConfig({
+      ...config,
+      rateLimitingEnabled: !config.rateLimitingEnabled,
+    })
   }
 
   const hasChanges = config && originalConfig && JSON.stringify(config) !== JSON.stringify(originalConfig)
@@ -311,41 +346,81 @@ export function AdminConfiguration() {
         </div>
       </div>
 
-      {/* Route Protection Status */}
+      {/* Rate Limiting Toggle */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-medium text-gray-900 flex items-center">
-            <Shield className="h-5 w-5 mr-2" />
-            Route Protection Status
+            <Activity className="h-5 w-5 mr-2" />
+            Rate Limiting
           </h3>
-          <p className="mt-1 text-sm text-gray-500">Current protection status of all routes</p>
+          <p className="mt-1 text-sm text-gray-500">Enable or disable rate limiting system-wide</p>
         </div>
         <div className="p-6">
-          <div className="space-y-3">
-            {routeStatuses.map((route, index) => (
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900">Rate Limiting System</h4>
+              <p className="text-sm text-gray-500">Controls whether rate limiting is active</p>
+            </div>
+            <button
+              onClick={toggleRateLimiting}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                config?.rateLimitingEnabled ? 'bg-indigo-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  config?.rateLimitingEnabled ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+
+      {/* Routes in Scope */}
+      <div className="bg-white shadow rounded-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            <Settings className="h-5 w-5 mr-2" />
+            Protected Routes
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">Routes that are protected by rate limiting and Turnstile</p>
+        </div>
+        <div className="p-6">
+          {/* Add New Route */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+              placeholder="/api/example"
+              value={newRouteInScope}
+              onChange={(e) => setNewRouteInScope(e.target.value)}
+            />
+            <button
+              onClick={addRouteInScope}
+              className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              Add Route
+            </button>
+          </div>
+
+          {/* Routes List */}
+          <div className="space-y-2">
+            {config?.routesInScope.map((route, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    route.isProtected ? 'bg-green-500' : 'bg-gray-400'
-                  }`} />
-                  <span className="font-mono text-sm text-gray-700">{route.pattern}</span>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    route.type === 'scope' ? 'bg-blue-100 text-blue-800' :
-                    route.type === 'route-specific' ? 'bg-purple-100 text-purple-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {route.type}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-500">
-                  {route.limits && (
-                    <span>
-                      {route.limits.perMinute || route.limits.minute || 'N/A'}/min
-                    </span>
-                  )}
-                </div>
+                <span className="font-mono text-sm text-gray-700">{route}</span>
+                <button
+                  onClick={() => removeRouteInScope(index)}
+                  className="text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  Remove
+                </button>
               </div>
             ))}
+            {config?.routesInScope.length === 0 && (
+              <p className="text-sm text-gray-500 text-center py-4">No routes configured</p>
+            )}
           </div>
         </div>
       </div>

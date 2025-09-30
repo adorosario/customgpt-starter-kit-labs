@@ -108,6 +108,7 @@ async function fetchRedisOverrides(): Promise<any | null> {
 function mapOverridesToConfig(baseConfig: Config, overrides: any): Config {
   if (!overrides || typeof overrides !== 'object') return baseConfig;
   const merged = deepMerge(baseConfig, {});
+  
   // Limits
   if (overrides.limits && overrides.limits.global) {
     merged.limits.global.minute = overrides.limits.global.minute ?? merged.limits.global.minute;
@@ -115,22 +116,32 @@ function mapOverridesToConfig(baseConfig: Config, overrides: any): Config {
     merged.limits.global.day = overrides.limits.global.day ?? merged.limits.global.day;
     merged.limits.global.month = overrides.limits.global.month ?? merged.limits.global.month;
   }
+  
+  // Routes overrides
+  if (overrides.routes) {
+    (merged as any).routes = overrides.routes;
+  }
+  
   // routesInScope overrides
-  if (Array.isArray(overrides.routesInScope) && overrides.routesInScope.length > 0) {
-    (merged as any).routesInScope = overrides.routesInScope;
+  if (Array.isArray(overrides.routesInScope)) {
+    merged.routesInScope = overrides.routesInScope;
   }
-  // Turnstile flag
-  if (overrides.turnstile && typeof overrides.turnstile.enabled === 'boolean') {
-    merged.turnstileEnabled = overrides.turnstile.enabled;
+  
+  // Turnstile flag (legacy support - Turnstile config is now env-only)
+  if (typeof overrides.turnstileEnabled === 'boolean') {
+    merged.turnstileEnabled = overrides.turnstileEnabled;
   }
+  
   // Rate limiting enabled flag
   if (typeof overrides.rateLimitingEnabled === 'boolean') {
     merged.rateLimitingEnabled = overrides.rateLimitingEnabled;
   }
+  
   // Optional jwtSecret override
   if (typeof overrides.jwtSecret === 'string' && overrides.jwtSecret.length > 0) {
     (merged as any).jwtSecret = overrides.jwtSecret;
   }
+  
   return merged;
 }
 
@@ -310,4 +321,35 @@ export async function getIdentityKey(request: NextRequest): Promise<string> {
  */
 export function getIdentityConfig(): Config {
   return loadConfig();
+}
+
+/**
+ * Force refresh Redis configuration (for admin panel)
+ */
+export async function refreshRedisConfig(): Promise<void> {
+  const fileConfig = cachedConfig || {
+    identityOrder: ['jwt-sub', 'session-cookie', 'ip'],
+    jwtSecret: undefined,
+    limits: {
+      global: {
+        minute: 10,
+        hour: 100,
+        day: 1000,
+        month: 30000,
+      },
+    },
+    routesInScope: ['/api/proxy/projects', '/api/proxy/user'],
+    turnstileEnabled: false,
+    rateLimitingEnabled: false,
+  };
+  
+  try {
+    const overrides = await fetchRedisOverrides();
+    const merged = mapOverridesToConfig(fileConfig, overrides);
+    cachedMergedConfig = merged;
+    lastRedisLoadMs = Date.now();
+    console.log('[Identity] Redis configuration refreshed');
+  } catch (error) {
+    console.error('[Identity] Failed to refresh Redis config:', error);
+  }
 }

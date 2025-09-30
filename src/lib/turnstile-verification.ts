@@ -79,17 +79,14 @@ export interface TurnstileConfig {
 }
 
 /**
- * Get Turnstile configuration from environment
+ * Get Turnstile configuration from environment variables only
  */
 export function getTurnstileConfig(): TurnstileConfig {
-  // Merge runtime config from identity config (Redis overrides) with env defaults
-  const merged = getIdentityConfig();
-  const uiEnabled = merged.turnstileEnabled === true;
-  const envEnabled = process.env.TURNSTILE_ENABLED === 'true';
-  const enabled = typeof merged.turnstileEnabled === 'boolean' ? uiEnabled : envEnabled;
-  const cacheSeconds = (merged as any).turnstile?.cacheDurationSeconds ?? parseInt(process.env.TURNSTILE_CACHE_DURATION || '300');
+  const enabled = process.env.TURNSTILE_ENABLED === 'true';
+  const cacheSeconds = parseInt(process.env.TURNSTILE_CACHE_DURATION || '300');
   const bypassAuthenticated = process.env.TURNSTILE_BYPASS_AUTHENTICATED !== 'false';
   const requiredForIPUsers = process.env.TURNSTILE_REQUIRED_FOR_IP_USERS !== 'false';
+  
   return {
     enabled,
     bypassAuthenticated,

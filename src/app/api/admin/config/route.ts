@@ -62,11 +62,6 @@ export async function POST(request: NextRequest) {
         identityMultipliers: body.identityMultipliers || { jwt: 2.0, session: 1.5, ip: 1.0 },
         routesInScope: Array.isArray(body.routesInScope) ? body.routesInScope : undefined,
         rateLimitingEnabled: body.rateLimitingEnabled !== undefined ? !!body.rateLimitingEnabled : true,
-        turnstile: {
-          enabled: !!body.turnstile?.enabled,
-          bypassAuthenticated: !!body.turnstile?.bypassAuthenticated,
-          cacheDurationSeconds: (body.turnstile?.cacheDuration ?? 300)
-        }
       };
     }
 
@@ -81,18 +76,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (canonical.turnstile) {
-      const ts = canonical.turnstile;
-      if (typeof ts.enabled !== 'boolean') {
-        return NextResponse.json({ success: false, error: 'turnstile.enabled must be boolean' }, { status: 400 });
-      }
-      if (ts.cacheDurationSeconds != null && (typeof ts.cacheDurationSeconds !== 'number' || ts.cacheDurationSeconds < 0)) {
-        return NextResponse.json({ success: false, error: 'turnstile.cacheDurationSeconds must be non-negative number' }, { status: 400 });
-      }
-    }
 
     const redis = getRedis();
     await redis.set(CONFIG_KEY, canonical);
+    
+    // Force refresh the configuration cache
+    const { refreshRedisConfig } = await import('@/lib/identity');
+    await refreshRedisConfig();
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Failed to save config' }, { status: 500 });

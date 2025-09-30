@@ -1,26 +1,16 @@
 {
     "identityOrder": ["jwt-sub", "session-cookie", "ip"],
-    "jwtSecret": "your-jwt-secret-key-here",
     "limits": {
       "global": {
-        "minute": 10,
-        "hour": 100,
-        "day": 1000,
-        "month": 30000
+        "minute": 60,
+        "hour": 1000,
+        "day": 10000,
+        "month": 100000
       }
     },
     "routesInScope": [
       "/api/proxy/projects",
-      "/api/proxy/user",
-      "/api/admin/test"
+      "/api/proxy/user"
     ],
-    "turnstileEnabled": true,
-    "rateLimitingEnabled": false,
-    "turnstile": {
-      "enabled": true,
-      "bypassAuthenticated": true,
-      "requiredForIPUsers": true,
-      "cacheDurationMinutes": 5,
-      "testMode": false
-    }
+    "rateLimitingEnabled": false
   }
