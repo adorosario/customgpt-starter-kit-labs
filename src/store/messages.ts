@@ -1171,6 +1171,42 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
         message: (error as any)?.message
       });
       
+      // Handle specific error types with appropriate toast notifications
+      const errorStatus = (error as any)?.status;
+      const errorMessage = (error as any)?.message || (error as any)?.data?.message;
+      
+      if (errorStatus === 429) {
+        // Rate limit exceeded
+        toast.error('Rate limit exceeded', {
+          description: 'Too many requests. Please wait a moment before trying again.',
+          duration: 5000,
+        });
+      } else if (errorStatus === 403 && errorMessage?.includes('verification')) {
+        // Turnstile verification required
+        toast.error('Human verification required', {
+          description: 'Please complete the verification to continue.',
+          duration: 5000,
+        });
+      } else if (errorStatus === 401) {
+        // Authentication error
+        toast.error('Authentication failed', {
+          description: 'Please check your API key configuration.',
+          duration: 5000,
+        });
+      } else if (errorStatus === 500) {
+        // Server error
+        toast.error('Server error', {
+          description: 'Please try again later.',
+          duration: 5000,
+        });
+      } else {
+        // Generic error
+        toast.error('Failed to load messages', {
+          description: errorMessage || 'Please try again.',
+          duration: 4000,
+        });
+      }
+      
       // Try to load from local storage as fallback
       const cachedMessages = loadMessagesFromStorage(conversationId);
       if (cachedMessages && cachedMessages.length > 0) {

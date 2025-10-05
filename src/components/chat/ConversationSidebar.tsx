@@ -852,7 +852,7 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
           <ConversationSkeleton count={5} />
         ) : error && (!Array.isArray(conversations) || conversations.length === 0) ? (
           <div className="p-4 text-center">
-            <p className="text-sm text-destructive mb-2">Failed to load conversations</p>
+            <p className="text-sm text-muted-foreground mb-2">No conversations available</p>
             <Button
               size="sm"
               variant="ghost"

@@ -37,6 +37,7 @@ import { useConfigStore } from '@/store';
 import { ApiKeySetupModal } from '@/components/setup/ApiKeySetupModal';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { useDemoModeContext } from '@/contexts/DemoModeContext';
+import { TurnstileGate } from '@/components/chat/TurnstileGate';
 import type { Agent } from '@/types';
 
 /**
@@ -224,12 +225,14 @@ function HomeContent() {
     <PageLayout showBackButton={false}>
       {/* Container with calculated height to account for navbar */}
       <div className="h-[calc(100vh-4rem)] bg-gray-50">
-        {/* Main chat interface in standalone mode */}
+        {/* Main chat interface in standalone mode with Turnstile protection */}
         {(isRuntimeDemoMode || isSetupComplete) && (
-          <ChatLayout 
-            mode="standalone" 
-            onAgentSettings={handleAgentSettings}
-          />
+          <TurnstileGate>
+            <ChatLayout 
+              mode="standalone" 
+              onAgentSettings={handleAgentSettings}
+            />
+          </TurnstileGate>
         )}
         {/* Debug info */}
         {!(isRuntimeDemoMode || isSetupComplete) && (
